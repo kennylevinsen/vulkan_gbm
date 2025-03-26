@@ -65,6 +65,181 @@ void vulkan_format_props_finish(struct vulkan_format_props *props) {
 	free(props->render_mods);
 	free(props->texture_mods);
 }
+struct pixel_format_info {
+	uint32_t drm_format;
+	uint32_t opaque_substitute;
+	uint32_t bytes_per_block;
+	uint32_t block_width, block_height;
+};
+
+static const struct pixel_format_info pixel_format_info[] = {
+	{
+		.drm_format = DRM_FORMAT_XRGB8888,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_ARGB8888,
+		.opaque_substitute = DRM_FORMAT_XRGB8888,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_XBGR8888,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_ABGR8888,
+		.opaque_substitute = DRM_FORMAT_XBGR8888,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_RGBX8888,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_RGBA8888,
+		.opaque_substitute = DRM_FORMAT_RGBX8888,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGRX8888,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGRA8888,
+		.opaque_substitute = DRM_FORMAT_BGRX8888,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_R8,
+		.bytes_per_block = 1,
+	},
+	{
+		.drm_format = DRM_FORMAT_GR88,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_RGB888,
+		.bytes_per_block = 3,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGR888,
+		.bytes_per_block = 3,
+	},
+	{
+		.drm_format = DRM_FORMAT_RGBX4444,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_RGBA4444,
+		.opaque_substitute = DRM_FORMAT_RGBX4444,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGRX4444,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGRA4444,
+		.opaque_substitute = DRM_FORMAT_BGRX4444,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_RGBX5551,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_RGBA5551,
+		.opaque_substitute = DRM_FORMAT_RGBX5551,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGRX5551,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGRA5551,
+		.opaque_substitute = DRM_FORMAT_BGRX5551,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_XRGB1555,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_ARGB1555,
+		.opaque_substitute = DRM_FORMAT_XRGB1555,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_RGB565,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_BGR565,
+		.bytes_per_block = 2,
+	},
+	{
+		.drm_format = DRM_FORMAT_XRGB2101010,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_ARGB2101010,
+		.opaque_substitute = DRM_FORMAT_XRGB2101010,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_XBGR2101010,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_ABGR2101010,
+		.opaque_substitute = DRM_FORMAT_XBGR2101010,
+		.bytes_per_block = 4,
+	},
+	{
+		.drm_format = DRM_FORMAT_XBGR16161616F,
+		.bytes_per_block = 8,
+	},
+	{
+		.drm_format = DRM_FORMAT_ABGR16161616F,
+		.opaque_substitute = DRM_FORMAT_XBGR16161616F,
+		.bytes_per_block = 8,
+	},
+	{
+		.drm_format = DRM_FORMAT_XBGR16161616,
+		.bytes_per_block = 8,
+	},
+	{
+		.drm_format = DRM_FORMAT_ABGR16161616,
+		.opaque_substitute = DRM_FORMAT_XBGR16161616,
+		.bytes_per_block = 8,
+	},
+	{
+		.drm_format = DRM_FORMAT_YVYU,
+		.bytes_per_block = 4,
+		.block_width = 2,
+		.block_height = 1,
+	},
+	{
+		.drm_format = DRM_FORMAT_VYUY,
+		.bytes_per_block = 4,
+		.block_width = 2,
+		.block_height = 1,
+	},
+};
+
+static const size_t pixel_format_info_size =
+	sizeof(pixel_format_info) / sizeof(pixel_format_info[0]);
+
+const struct pixel_format_info *drm_get_pixel_format_info(uint32_t fmt) {
+	for (size_t i = 0; i < pixel_format_info_size; ++i) {
+		if (pixel_format_info[i].drm_format == fmt) {
+			return &pixel_format_info[i];
+		}
+	}
+
+	return NULL;
+}
 
 static const struct vulkan_format formats[] = {
 	// Vulkan non-packed 8-bits-per-channel formats have an inverted channel
@@ -258,12 +433,27 @@ static int vulkan_find_mem_type(VkPhysicalDevice phdev,VkMemoryPropertyFlags fla
 	return -1;
 }
 
+struct gbm_vulkan_bo_import {
+        int fds[GBM_MAX_PLANES];
+};
+
+struct gbm_vulkan_bo_mapping {
+	int refcnt;
+	uint32_t stride, bpp;
+	char *map;
+};
+
 struct gbm_vulkan_bo {
         struct gbm_bo base;
         VkImage image;
         VkDeviceMemory memory;
-        uint64_t modifier;
         size_t plane_cnt;
+        uint64_t modifier;
+
+	int strides[GBM_MAX_PLANES];
+	int offsets[GBM_MAX_PLANES];
+	struct gbm_vulkan_bo_import *import;
+	struct gbm_vulkan_bo_mapping *mapping;
 };
 
 static inline struct gbm_vulkan_bo *gbm_vulkan_bo(struct gbm_bo *bo) {
@@ -280,6 +470,15 @@ static void gbm_vulkan_bo_destroy(struct gbm_bo *_bo) {
 	if (bo->image) {
 		vkDestroyImage(vulkan->device, bo->image, NULL);
 	}
+	if (bo->import) {
+		free(bo->import);
+	}
+	if (bo->mapping) {
+		if (bo->mapping->refcnt > 0) {
+			fprintf(stderr, "!!! BO destroyed with active mapping\n");
+		}
+		free(bo->mapping);
+	}
 	free(bo);
 }
 
@@ -292,6 +491,7 @@ static struct gbm_bo * gbm_vulkan_bo_create(struct gbm_device *gbm,
 
 	if (usage & (GBM_BO_USE_PROTECTED | GBM_BO_USE_WRITE)) {
 		// TODO: Dumb buffer fallback?
+		fprintf(stderr, "Cannot create dumb buffer\n");
 		return NULL;
 	}
 
@@ -406,6 +606,24 @@ static struct gbm_bo * gbm_vulkan_bo_create(struct gbm_device *gbm,
 		vulkan_format_props_find_modifier(format_props, img_mod_props.drmFormatModifier, usage & GBM_BO_USE_RENDERING);
 	assert(mod_props != NULL);
 	bo->plane_cnt = mod_props->props.drmFormatModifierPlaneCount;
+
+	for (size_t idx = 0; idx < bo->plane_cnt; idx++) {
+		const VkImageAspectFlagBits plane_aspects[] = {
+			VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT,
+			VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT,
+			VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT,
+			VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT,
+		};
+
+		VkImageSubresource img_subres = {
+			.aspectMask = plane_aspects[idx],
+		};
+		VkSubresourceLayout subres_layout = {0};
+		vkGetImageSubresourceLayout(vulkan->device, bo->image, &img_subres, &subres_layout);
+		bo->strides[idx] = subres_layout.rowPitch;
+		bo->offsets[idx] = subres_layout.offset;
+	}
+
 	return &bo->base;
 }
 
@@ -415,7 +633,17 @@ static int gbm_vulkan_bo_get_fd(struct gbm_bo *_bo) {
 	int fd;
 
 	if (bo->image == NULL) {
+		fprintf(stderr, "Atempt to get fd for plane without image\n");
+		errno = EINVAL;
 		return -1;
+	}
+	if (bo->plane_cnt != 1) {
+		fprintf(stderr, "Atempt to get single fd for multi-planar image\n");
+		errno = EINVAL;
+		return -1;
+	}
+	if (bo->import) {
+		return bo->import->fds[0];
 	}
 
 	VkMemoryGetFdInfoKHR mem_get_fd = {
@@ -434,7 +662,11 @@ static int gbm_vulkan_bo_get_plane_fd(struct gbm_bo *_bo, int plane) {
 	struct gbm_vulkan_bo *bo = gbm_vulkan_bo(_bo);
 
 	if ((size_t)plane >= bo->plane_cnt) {
+		fprintf(stderr, "Atempt to get fd for invalid plane\n");
 		return -1;
+	}
+	if (bo->import) {
+		return bo->import->fds[plane];
 	}
 
 	// TODO: Cache and dup?
@@ -443,7 +675,7 @@ static int gbm_vulkan_bo_get_plane_fd(struct gbm_bo *_bo, int plane) {
 
 static uint64_t gbm_vulkan_bo_get_modifier(struct gbm_bo *_bo) {
 	struct gbm_vulkan_bo *bo = gbm_vulkan_bo(_bo);
-	if (!bo->image) {
+	if (!bo->image && !bo->import) {
 		return DRM_FORMAT_MOD_LINEAR;
 	}
 	return bo->modifier;
@@ -451,63 +683,50 @@ static uint64_t gbm_vulkan_bo_get_modifier(struct gbm_bo *_bo) {
 
 static union gbm_bo_handle gbm_vulkan_bo_get_handle_for_plane(struct gbm_bo *_bo, int plane) {
 	struct gbm_vulkan_bo *bo = gbm_vulkan_bo(_bo);
-
+	struct gbm_vulkan_device *dev = gbm_vulkan_device(_bo->gbm);
 	if ((size_t)plane >= bo->plane_cnt) {
 		return (union gbm_bo_handle){0};
 	}
+	if (bo->import) {
+		union gbm_bo_handle ret;
 
-	// TODO: Anything better to return?
+		if (drmPrimeFDToHandle(dev->base.v0.fd, bo->import->fds[plane], &ret.u32) != 0) {
+			fprintf(stderr, "Could not create handle from PRIME FD\n");
+			return (union gbm_bo_handle){0};
+		}
+		return ret;
+	}
+
+	int fd = gbm_vulkan_bo_get_fd(_bo);
+	if (fd == -1) {
+		return (union gbm_bo_handle){0};
+	}
+
 	union gbm_bo_handle ret;
-	ret.ptr = _bo;
+	if (drmPrimeFDToHandle(dev->base.v0.fd, fd, &ret.u32) != 0) {
+		fprintf(stderr, "Could not create handle from PRIME FD\n");
+		return (union gbm_bo_handle){0};
+	}
+
 	return ret;
 }
 
 static uint32_t gbm_vulkan_bo_get_offset(struct gbm_bo *_bo, int plane) {
-	struct gbm_vulkan_device *dev = gbm_vulkan_device(_bo->gbm);
 	struct gbm_vulkan_bo *bo = gbm_vulkan_bo(_bo);
-
 	if ((size_t)plane >= bo->plane_cnt) {
+		errno = EINVAL;
 		return 0;
 	}
-
-	const VkImageAspectFlagBits plane_aspects[] = {
-		VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT,
-		VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT,
-		VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT,
-		VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT,
-	};
-	assert(bo->plane_cnt <=sizeof(plane_aspects) / sizeof(plane_aspects[0]));
-
-	VkImageSubresource img_subres = {
-		.aspectMask = plane_aspects[plane],
-	};
-	VkSubresourceLayout subres_layout = {0};
-	vkGetImageSubresourceLayout(dev->device, bo->image, &img_subres, &subres_layout);
-	return subres_layout.offset;
+	return bo->offsets[plane];
 }
 
 static uint32_t gbm_vulkan_bo_get_stride(struct gbm_bo *_bo, int plane) {
-	struct gbm_vulkan_device *dev = gbm_vulkan_device(_bo->gbm);
 	struct gbm_vulkan_bo *bo = gbm_vulkan_bo(_bo);
-
 	if ((size_t)plane >= bo->plane_cnt) {
+		errno = EINVAL;
 		return 0;
 	}
-
-	const VkImageAspectFlagBits plane_aspects[] = {
-		VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT,
-		VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT,
-		VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT,
-		VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT,
-	};
-	assert(bo->plane_cnt <=sizeof(plane_aspects) / sizeof(plane_aspects[0]));
-
-	VkImageSubresource img_subres = {
-		.aspectMask = plane_aspects[plane],
-	};
-	VkSubresourceLayout subres_layout = {0};
-	vkGetImageSubresourceLayout(dev->device, bo->image, &img_subres, &subres_layout);
-	return subres_layout.rowPitch;
+	return bo->strides[plane];
 }
 
 static int gbm_vulkan_bo_get_planes(struct gbm_bo *_bo) {
@@ -523,6 +742,7 @@ static int gbm_vulkan_get_format_modifier_plane_count(struct gbm_device *gbm,
 	const struct vulkan_format_modifier_props *mod_props =
 		vulkan_format_props_find_modifier(format_props, modifier, false);
 	if (mod_props == NULL) {
+		errno = EINVAL;
 		return 0;
 	}
 	assert(mod_props != NULL);
@@ -533,10 +753,12 @@ static int gbm_vulkan_is_format_supported(struct gbm_device *gbm, uint32_t forma
 	struct gbm_vulkan_device *dev = gbm_vulkan_device(gbm);
 	if (usage & (GBM_BO_USE_WRITE | GBM_BO_USE_PROTECTED)) {
 		// These usages are not implemented
+		errno = EINVAL;
 		return 0;
 	}
 	struct vulkan_format_props *format_props = vulkan_format_props_from_drm(dev, format);
 	if (format_props == NULL) {
+		errno = EINVAL;
 		return 0;
 	}
 	return 1;
@@ -549,24 +771,188 @@ static int gbm_vulkan_bo_write(struct gbm_bo *_bo, const void *buf, size_t count
 	return -1;
 }
 
+static bool is_dmabuf_disjoint(struct gbm_import_fd_modifier_data *fd_data) {
+	if (fd_data->num_fds == 1) {
+		return false;
+	}
+
+	struct stat first_stat;
+	if (fstat(fd_data->fds[0], &first_stat) != 0) {
+		return true;
+	}
+
+	for (uint32_t i = 1; i < fd_data->num_fds; i++) {
+		struct stat plane_stat;
+		if (fstat(fd_data->fds[i], &plane_stat) != 0) {
+			return true;
+		}
+
+		if (first_stat.st_ino != plane_stat.st_ino) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static struct gbm_bo *gbm_vulkan_bo_import(struct gbm_device *gbm, uint32_t type,
 		void *buffer, uint32_t usage) {
-	(void)gbm, (void)type, (void)buffer, (void)usage;
-	// NOT IMPLEMENTED
-	return NULL;
+	struct gbm_vulkan_device *dev = gbm_vulkan_device(gbm);
+
+	switch (type) {
+	case GBM_BO_IMPORT_WL_BUFFER:
+		errno = ENOSYS;
+		return NULL;
+	case GBM_BO_IMPORT_EGL_IMAGE:
+		errno = ENOSYS;
+		return NULL;
+	case GBM_BO_IMPORT_FD:
+		errno = ENOSYS;
+		return NULL;
+	case GBM_BO_IMPORT_FD_MODIFIER:;
+      		struct gbm_import_fd_modifier_data *fd_data = buffer;
+		const struct vulkan_format_props *format_props =
+			vulkan_format_props_from_drm(dev, fd_data->format);
+		if (!format_props) {
+			fprintf(stderr, "no matching drm format 0x%08x available\n", fd_data->format);
+			errno = EINVAL;
+			return NULL;
+		}
+
+		const struct vulkan_format_modifier_props *mod =
+			vulkan_format_props_find_modifier(format_props, fd_data->modifier, usage & GBM_BO_USE_RENDERING);
+		if (!mod) {
+			fprintf(stderr, "no matching drm modifier 0x%016lx available\n", fd_data->modifier);
+			errno = EINVAL;
+			return NULL;
+		}
+	
+		if (fd_data->width > mod->max_extent.width || fd_data->height > mod->max_extent.height) {
+			fprintf(stderr, "plane exceeds modifier max extents (%dx%d > %dx%d)\n",
+					fd_data->width, fd_data->height, mod->max_extent.width, mod->max_extent.height);
+			errno = EINVAL;
+			return NULL;
+		}
+		if (mod->props.drmFormatModifierPlaneCount != fd_data->num_fds) {
+			fprintf(stderr, "plane count does not match modifier (%d != %d)\n",
+				fd_data->num_fds, mod->props.drmFormatModifierPlaneCount);
+			errno = EINVAL;
+			return NULL;
+		}
+
+		bool disjoint = is_dmabuf_disjoint(fd_data);
+		if (disjoint && !(mod->props.drmFormatModifierTilingFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT)) {
+			fprintf(stderr, "format/modifier does not support disjoint images\n");
+			errno = EINVAL;
+			return NULL;
+		}
+
+		// We will just record the parameters in the BO
+		struct gbm_vulkan_bo *bo = calloc(1, sizeof *bo);
+		if (bo == NULL) {
+			return NULL;
+		}
+
+		bo->base.gbm = gbm;
+		bo->base.v0.width = fd_data->width;
+		bo->base.v0.height = fd_data->height;
+		bo->base.v0.format = fd_data->format;
+		bo->plane_cnt = fd_data->num_fds;
+		bo->modifier = fd_data->modifier;
+
+		bo->import = calloc(1, sizeof(*bo->import));
+		if (bo->import == NULL) {
+			free(bo);
+			return NULL;
+		}
+		for (uint32_t idx = 0; idx < fd_data->num_fds; idx++) {
+			bo->strides[idx] = fd_data->strides[idx];
+			bo->offsets[idx] = fd_data->offsets[idx];
+
+			// Do we have to dup here?
+			bo->import->fds[idx] = fd_data->fds[idx];
+		}
+		return &bo->base;
+	default:
+		errno = EINVAL;
+		return NULL;
+	}
 }
 
 static void *gbm_vulkan_bo_map(struct gbm_bo *_bo, uint32_t x, uint32_t y,
 		uint32_t width, uint32_t height, uint32_t flags, uint32_t *stride, void **map_data) {
-	(void)_bo, (void)x, (void)y, (void)width, (void)height, (void)flags, (void)stride, (void)map_data;
-	errno = EINVAL;
-	// NOT IMPLEMENTEd
-	return NULL;
+	(void)width, (void)height, (void)flags;
+	struct gbm_vulkan_bo *bo = gbm_vulkan_bo(_bo);
+	struct gbm_vulkan_device *dev = gbm_vulkan_device(_bo->gbm);
+
+	if (!bo->image) {
+		// We don't support mapping imported BO's for now, 
+		fprintf(stderr, "Attempted map for imported image\n");
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if (bo->mapping) {
+		char *addr = bo->mapping->map + (bo->mapping->stride * y) + (x * bo->mapping->bpp);
+		bo->mapping->refcnt++;
+		*stride = bo->mapping->stride;
+		*map_data = bo;
+		return addr;
+	}
+
+	const struct pixel_format_info *info = drm_get_pixel_format_info(bo->base.v0.format);
+	if (info == NULL) {
+		fprintf(stderr, "Unknown format for mapping\n");
+		errno = EINVAL;
+		return NULL;
+	}
+
+	bo->mapping = calloc(1, sizeof(*bo->mapping));
+	if (bo->mapping == NULL) {
+		return NULL;
+	}
+	// TODO: Validate stride, dimensions
+	
+	if (vkMapMemory(dev->device, bo->memory, 0, VK_WHOLE_SIZE, 0, (void**)&bo->mapping->map) != VK_SUCCESS) {
+		fprintf(stderr, "Mapping memory failed\n");
+		return NULL;
+	}
+
+	VkImageSubresource img_sub_res = {
+		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.arrayLayer = 0,
+		.mipLevel = 0,
+	};
+	VkSubresourceLayout img_sub_layout;
+	vkGetImageSubresourceLayout(dev->device, bo->image, &img_sub_res, &img_sub_layout);
+	bo->mapping->stride = img_sub_layout.rowPitch;
+	bo->mapping->bpp = info->bytes_per_block;
+
+	char *addr = bo->mapping->map + (bo->mapping->stride * y) + (x * bo->mapping->bpp);
+	bo->mapping->refcnt++;
+	*stride = bo->mapping->stride;
+	*map_data = bo;
+	return addr;
 }
 
 static void gbm_vulkan_bo_unmap(struct gbm_bo *_bo, void *map_data) {
-	(void)_bo, (void)map_data;
-	// NOT IMPLEMENTED
+	struct gbm_vulkan_bo *bo = gbm_vulkan_bo(_bo);
+	struct gbm_vulkan_device *dev = gbm_vulkan_device(_bo->gbm);
+	if (map_data != _bo) {
+		fprintf(stderr, "Attempted unmap with invalid map_data\n");
+		errno = EINVAL;
+		return;
+	}
+	if (!bo->mapping) {
+		fprintf(stderr, "Attempted unmap without mapping\n");
+		errno = EINVAL;
+		return;
+	}
+	if (--bo->mapping->refcnt == 0) {
+		vkUnmapMemory(dev->device, bo->memory);
+		free(bo->mapping);
+		bo->mapping = NULL;
+	}
 }
 
 static struct gbm_surface *gbm_vulkan_surface_create(struct gbm_device *gbm,
@@ -574,28 +960,33 @@ static struct gbm_surface *gbm_vulkan_surface_create(struct gbm_device *gbm,
 		const uint64_t *modifiers, const unsigned count) {
 	(void)gbm, (void)width, (void)height, (void)format, (void)flags, (void)modifiers, (void)count;
 	// NOT IMPLEMENTED
+	errno = ENOSYS;
 	return NULL;
 }
 
 static void gbm_vulkan_surface_destroy(struct gbm_surface *_surf) {
 	(void)_surf;
 	// NOT IMPLEMENTED
+	errno = ENOSYS;
 }
 
 static struct gbm_bo *gbm_vulkan_surface_lock_front_buffer(struct gbm_surface *_surf) {
 	(void)_surf;
 	// NOT IMPLEMENTED
+	errno = ENOSYS;
 	return NULL;
 }
 
 static void gbm_vulkan_surface_release_buffer(struct gbm_surface *_surf, struct gbm_bo *_bo) {
 	(void)_surf, (void)_bo;
 	// NOT IMPLEMENTED
+	errno = ENOSYS;
 }
 
 static int gbm_vulkan_surface_has_free_buffers(struct gbm_surface *_surf) {
 	(void)_surf;
 	// NOT IMPLEMENTED
+	errno = ENOSYS;
 	return -1;
 }
 
@@ -897,7 +1288,7 @@ static VkPhysicalDevice vulkan_select_physical_device(VkInstance instance, int f
 		}
 
 		bool has_drm_props = check_extension(avail_ext_props, avail_extc,
-		VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME);
+			VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME);
 		if (!has_drm_props) {
 			fprintf(stderr, "Device does not support DRM extension\n");
 			continue;
